@@ -1,2 +1,2 @@
 # ConcurrentPageRank
-Multi threaded page rank algorithm.
+Multi-threaded PageRank algorithm.
