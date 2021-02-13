@@ -20,6 +20,8 @@ class Sha256IdGenerator : public IdGenerator {
 
       FILE *pipe = popen("sha256sum content.txt", "r");
 
+      std::system("sha256sum content.txt > nic");
+
       if (pipe == nullptr) {
         throw std::runtime_error("popen() failed!");
       }
