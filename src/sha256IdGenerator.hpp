@@ -9,7 +9,7 @@
 class Sha256IdGenerator : public IdGenerator {
   public:
     virtual PageId generateId(std::string const &content) const {
-      char buffer[64];
+      char buffer[65];
       std::string hashValue;
       std::ofstream contentFile("content.txt");
 
@@ -22,15 +22,16 @@ class Sha256IdGenerator : public IdGenerator {
       }
 
       if (fgets(buffer, 64, pipe) != nullptr) {
+        buffer[64] = '\0';
         hashValue = buffer;
       }
 
       pclose(pipe);
       contentFile.close();
 
-  //    if (remove("content.txt") != 0) {
-    //    throw std::runtime_error("Removal of a file failed!");
-   //   }
+      if (remove("content.txt") != 0) {
+        throw std::runtime_error("Removal of a file failed!");
+      }
 
       return PageId(hashValue);
     }
