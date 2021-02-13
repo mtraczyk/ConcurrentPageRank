@@ -102,7 +102,7 @@ class MultiThreadedPageRankComputer : public PageRankComputer {
 
       initializeStructures(network, numThreads, myPages, pageHashMap, numLinks, danglingNodes, edges);
 
-      for (uint32_t i = 0; i < iterations; ++i) {
+      for (uint32_t i = 0; i < iterations; i++) {
         std::unordered_map<PageId, PageRank, PageIdHash> previousPageHashMap = pageHashMap;
         threadsVector.clear();
         std::promise<double> differencePromises[numThreads];
