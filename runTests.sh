@@ -16,8 +16,8 @@ make
 
 ./tests/sha256Test
 
-./tests/e2eTest < ./tests/e2eScenario.txt
-for i in 1 2 7; do ./tests/e2eTest $i < ./tests/e2eScenario.txt; done
+./tests/e2eTest <./tests/e2eScenario.txt
+for i in 1 2 7; do ./tests/e2eTest $i <./tests/e2eScenario.txt; done
 
 echo ">>>>>>>>> Run tests in RELEASE"
 # Run tests in release config
@@ -26,5 +26,5 @@ make
 
 ./tests/sha256Test
 
-./tests/e2eTest < ./tests/e2eScenario.txt
-for i in 1 2 3 4 8; do ./tests/e2eTest $i < ./tests/e2eScenario.txt; done
+./tests/e2eTest <./tests/e2eScenario.txt
+for i in 1 2 3 4 8; do ./tests/e2eTest $i <./tests/e2eScenario.txt; done

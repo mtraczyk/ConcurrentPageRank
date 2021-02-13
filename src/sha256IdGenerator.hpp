@@ -21,8 +21,6 @@ class Sha256IdGenerator : public IdGenerator {
         throw std::runtime_error("popen() failed!");
       }
 
-      std::system("cat content.txt");
-
       if (fgets(buffer, 64, pipe) != nullptr) {
         buffer[64] = '\0';
         hashValue = buffer;
