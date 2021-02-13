@@ -21,13 +21,13 @@ class Sha256IdGenerator : public IdGenerator {
         throw std::runtime_error("popen() failed!");
       }
 
-      if (fgets(buffer, 64, pipe) != nullptr) {
-        for (int i = 0; i < 64; i++) {
-          std::cout << buffer[i];
-        }
+      if (fscanf(pipe, "%64s", buffer) == 1) {
+        printf("%s\n", buffer);
 
-        std::cout << std::endl;
         hashValue = buffer;
+        std::cout << buffer << std::endl;
+      } else {
+        throw std::runtime_error("fscanf() failed!");
       }
 
       pclose(pipe);
