@@ -20,14 +20,11 @@ class Sha256IdGenerator : public IdGenerator {
 
       FILE *pipe = popen("sha256sum content.txt", "r");
 
-      std::system("sha256sum content.txt > nic");
-
       if (pipe == nullptr) {
         throw std::runtime_error("popen() failed!");
       }
 
       if (fgets(buffer, 64, pipe) != nullptr) {
-        buffer[64] = '\0';
         hashValue = buffer;
       } else {
         throw std::runtime_error("fgets() failed!");
