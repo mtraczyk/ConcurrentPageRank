@@ -11,15 +11,16 @@ class Sha256IdGenerator : public IdGenerator {
     virtual PageId generateId(std::string const &content) const {
       char buffer[64];
       std::string hashValue;
-      std::fstream contentFile("content.txt", std::fstream::in | std::fstream::out | std::fstream::trunc);
+      std::fstream contentFile("content.txt", std::ios::in | std::ios::out | std::ios::trunc);
 
       if (!contentFile) {
         throw std::runtime_error("Could not open a file.");
       }
 
       contentFile << content;
-
       contentFile.close();
+
+      std::system("cat content.txt");
 
       FILE *pipe = popen("sha256sum content.txt", "r");
 
