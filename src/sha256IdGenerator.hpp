@@ -9,25 +9,25 @@
 class Sha256IdGenerator : public IdGenerator {
   public:
     virtual PageId generateId(std::string const &content) const {
-      char buffer[64];
+      char buffer[65];
       std::string hashValue;
       std::ofstream contentFile("content.txt");
 
       contentFile << content;
 
-      FILE *pipe = popen("sha256sum content.txt", "r");
+      std::system("cat content.txt | tr -d '\n' > output.txt");
+
+      FILE *pipe = popen("sha256sum output.txt", "r");
 
       if (pipe == nullptr) {
         throw std::runtime_error("popen() failed!");
       }
 
-      if (fscanf(pipe, "%64s", buffer) == 1) {
-        printf("%s\n", buffer);
-
+      if (fgets(buffer, 64, pipe) != nullptr) {
+        buffer[64] = '\0';
         hashValue = buffer;
-        std::cout << buffer << std::endl;
       } else {
-        throw std::runtime_error("fscanf() failed!");
+        throw std::runtime_error("fgets() failed!");
       }
 
       pclose(pipe);
