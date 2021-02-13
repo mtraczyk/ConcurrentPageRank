@@ -5,17 +5,17 @@
 #include "immutable/pageId.hpp"
 #include <iostream>
 #include <fstream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 class Sha256IdGenerator : public IdGenerator {
   public:
     virtual PageId generateId(std::string const &content) const {
       char buffer[64];
       std::string hashValue;
-      std::fstream contentFile;
-      contentFile.open("content.txt");
+      std::fstream contentFile("content.txt", std::fstream::in | std::fstream::out | std::fstream::trunc);
+
+      if (!contentFile) {
+        throw std::runtime_error("Could not open a file.");
+      }
 
       contentFile << content;
 
@@ -38,9 +38,9 @@ class Sha256IdGenerator : public IdGenerator {
       pclose(pipe);
       contentFile.close();
 
-      /*  if (remove("content.txt") != 0) {
-          throw std::runtime_error("Removal of a file failed!");
-        }*/
+      if (remove("content.txt") != 0) {
+        throw std::runtime_error("Removal of a file failed!");
+      }
 
       return PageId(hashValue);
     }
