@@ -25,11 +25,7 @@ class Sha256IdGenerator : public IdGenerator {
         throw std::runtime_error("popen() failed!");
       }
 
-      if (fgets(buffer, 64, pipe) != nullptr) {
-        for (int i = 0; i < 64; i++) {
-          printf("%c ", buffer[i]);
-        }
-
+      if (fscanf(pipe, "%64s", buffer) == 1) {
         hashValue = buffer;
       } else {
         throw std::runtime_error("fgets() failed!");
