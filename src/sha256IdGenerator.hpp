@@ -15,6 +15,8 @@ class Sha256IdGenerator : public IdGenerator {
 
       contentFile << content;
 
+      std::cout << content << std::endl;
+
       FILE *pipe = popen("sha256sum content.txt", "r");
 
       if (pipe == nullptr) {
