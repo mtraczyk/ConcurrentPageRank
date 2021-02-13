@@ -12,7 +12,7 @@
 class Sha256IdGenerator : public IdGenerator {
   public:
     virtual PageId generateId(std::string const &content) const {
-      char buffer[65];
+      char buffer[64];
       std::string hashValue;
       std::fstream contentFile("content.txt");
 
