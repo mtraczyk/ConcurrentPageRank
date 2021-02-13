@@ -19,6 +19,8 @@ class Sha256IdGenerator : public IdGenerator {
 
       contentFile << content;
 
+      contentFile.close();
+
       FILE *pipe = popen("sha256sum content.txt", "r");
 
       if (pipe == nullptr) {
@@ -32,7 +34,6 @@ class Sha256IdGenerator : public IdGenerator {
       }
 
       pclose(pipe);
-      contentFile.close();
 
       if (remove("content.txt") != 0) {
         throw std::runtime_error("Removal of a file failed!");
