@@ -15,8 +15,6 @@ make
 /usr/bin/valgrind valgrind --error-exitcode=123 --leak-check=full ./tests/pageRankCalculationTest
 
 ./tests/sha256Test
-./tests/pageRankCalculationTest
-./tests/pageRankPerformanceTest
 
 ./tests/e2eTest < ./tests/e2eScenario.txt
 for i in 1 2 7; do ./tests/e2eTest $i < ./tests/e2eScenario.txt; done
@@ -27,8 +25,6 @@ cmake -DCMAKE_BUILD_TYPE=Release .
 make
 
 ./tests/sha256Test
-./tests/pageRankCalculationTest
-./tests/pageRankPerformanceTest
 
 ./tests/e2eTest < ./tests/e2eScenario.txt
 for i in 1 2 3 4 8; do ./tests/e2eTest $i < ./tests/e2eScenario.txt; done

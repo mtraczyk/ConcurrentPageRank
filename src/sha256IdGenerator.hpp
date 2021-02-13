@@ -15,15 +15,13 @@ class Sha256IdGenerator : public IdGenerator {
 
       contentFile << content;
 
-      std::system("cat content.txt | tr -d '\n' > output.txt");
-
-      FILE *pipe = popen("sha256sum output.txt", "r");
-
-      system("cat output.txt");
+      FILE *pipe = popen("sha256sum content.txt", "r");
 
       if (pipe == nullptr) {
         throw std::runtime_error("popen() failed!");
       }
+
+      std::system("cat content.txt");
 
       if (fgets(buffer, 64, pipe) != nullptr) {
         buffer[64] = '\0';
@@ -35,9 +33,9 @@ class Sha256IdGenerator : public IdGenerator {
       pclose(pipe);
       contentFile.close();
 
-  /*    if (remove("content.txt") != 0) {
-        throw std::runtime_error("Removal of a file failed!");
-      }*/
+      /*    if (remove("content.txt") != 0) {
+            throw std::runtime_error("Removal of a file failed!");
+          }*/
 
       return PageId(hashValue);
     }
