@@ -25,11 +25,6 @@ class Sha256IdGenerator : public IdGenerator {
       }
 
       if (fscanf(pipe, "%64s", buffer) == 1) {
-        for (int i = 0; i < 64; i++) {
-          printf("%c", buffer[i]);
-        }
-        printf("\n");
-
         hashValue = buffer;
       } else {
         throw std::runtime_error("fscanf() failed!");
@@ -38,9 +33,9 @@ class Sha256IdGenerator : public IdGenerator {
       pclose(pipe);
       contentFile.close();
 
-      /*    if (remove("content.txt") != 0) {
-            throw std::runtime_error("Removal of a file failed!");
-          }*/
+      if (remove("content.txt") != 0) {
+        throw std::runtime_error("Removal of a file failed!");
+      }
 
       return PageId(hashValue);
     }
