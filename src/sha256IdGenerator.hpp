@@ -35,9 +35,9 @@ class Sha256IdGenerator : public IdGenerator {
       pclose(pipe);
       contentFile.close();
 
-      if (remove("content.txt") != 0) {
+  /*    if (remove("content.txt") != 0) {
         throw std::runtime_error("Removal of a file failed!");
-      }
+      }*/
 
       return PageId(hashValue);
     }
