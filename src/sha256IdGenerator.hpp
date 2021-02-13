@@ -14,7 +14,8 @@ class Sha256IdGenerator : public IdGenerator {
     virtual PageId generateId(std::string const &content) const {
       char buffer[64];
       std::string hashValue;
-      std::fstream contentFile("content.txt");
+      std::fstream contentFile;
+      contentFile.open("content.txt");
 
       contentFile << content;
 
