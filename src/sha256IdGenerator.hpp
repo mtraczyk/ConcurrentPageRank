@@ -24,11 +24,10 @@ class Sha256IdGenerator : public IdGenerator {
         throw std::runtime_error("popen() failed!");
       }
 
-      if (fscanf(pipe, "%64s", buffer) == 1) {
-        hashValue = buffer;
-      } else {
-        throw std::runtime_error("fscanf() failed!");
-      }
+      fscanf(pipe, "%64s", buffer);
+      hashValue = buffer;
+
+      std::cout << hashValue << std::endl;
 
       pclose(pipe);
       contentFile.close();
