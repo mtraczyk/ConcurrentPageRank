@@ -14,7 +14,7 @@ class Sha256IdGenerator : public IdGenerator {
       std::string hashValue;
       static std::atomic<int> counter(0);
       std::string fileName = "content" + std::to_string(counter.fetch_add(1)) + ".txt";
-      std::fstream contentFile("content.txt", std::ios::in | std::ios::out | std::ios::trunc);
+      std::fstream contentFile(fileName, std::ios::in | std::ios::out | std::ios::trunc);
 
       if (!contentFile) {
         throw std::runtime_error("Could not open a file.");
