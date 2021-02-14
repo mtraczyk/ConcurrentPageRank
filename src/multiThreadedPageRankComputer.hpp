@@ -15,14 +15,31 @@
 #include "immutable/pageRankComputer.hpp"
 
 namespace {
+  void initializePagesIds(uint32_t numThreads, uint32_t myNumber, Network const &network) {
+    auto pages = network.getPages();
+
+    for (uint32_t i = myNumber; i < network.getSize(); i += numThreads) {
+      pages[i].generateId(network.getGenerator());
+    }
+  }
+
   void initializeStructures(Network const &network, uint32_t numThreads, std::vector<PageId> *myPages,
                             std::unordered_map<PageId, PageRank, PageIdHash> &pageHashMap,
                             std::unordered_map<PageId, uint32_t, PageIdHash> &numLinks,
                             std::unordered_set<PageId, PageIdHash> &danglingNodes,
                             std::unordered_map<PageId, std::vector<PageId>, PageIdHash> &edges) {
+    std::vector<std::thread> threadsVector;
+
+    for (uint32_t i = 0; i < numThreads; i++) {
+      threadsVector.push_back(std::thread{initializePagesIds, numThreads, i, std::ref(network)});
+    }
+
+    for (uint32_t i = 0; i < numThreads; i++) {
+      threadsVector[i].join();
+    }
+
     // Initialization of structures needed in MultiThreadedPageRankComputer::computeForNetwork.
     for (auto const &page : network.getPages()) {
-      page.generateId(network.getGenerator());
       pageHashMap[page.getId()] = 1.0 / network.getSize();
     }
 
