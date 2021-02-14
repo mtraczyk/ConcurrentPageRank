@@ -11,6 +11,8 @@ class Sha256IdGenerator : public IdGenerator {
     virtual PageId generateId(std::string const &content) const {
       char buffer[64];
       std::string hashValue;
+      static std::atomic<int> counter(0);
+      std::string fileName = "content" + std::to_string(counter.fetch_add(1)) + ".txt";
       std::fstream contentFile("content.txt", std::ios::in | std::ios::out | std::ios::trunc);
 
       if (!contentFile) {
@@ -20,7 +22,8 @@ class Sha256IdGenerator : public IdGenerator {
       contentFile << content;
       contentFile.close();
 
-      FILE *pipe = popen("sha256sum content.txt", "r");
+      std::string aux = "sha256sum " + fileName;
+      FILE *pipe = popen(aux.c_str(), "r");
 
       if (pipe == nullptr) {
         throw std::runtime_error("popen() failed!");
@@ -34,7 +37,7 @@ class Sha256IdGenerator : public IdGenerator {
 
       pclose(pipe);
 
-      if (remove("content.txt") != 0) {
+      if (remove(fileName.c_str()) != 0) {
         throw std::runtime_error("Removal of a file failed!");
       }
 
