@@ -14,7 +14,7 @@ class Sha256IdGenerator : public IdGenerator {
       std::string hashValue;
       std::string aux = "echo tr -d '\n' | echo '" + content + "' | sha256sum";
       FILE *pipe = popen(aux.c_str(), "r");
-
+      std::cout << aux << std::endl;
       if (pipe == nullptr) {
         throw std::runtime_error("popen() failed!");
       }
