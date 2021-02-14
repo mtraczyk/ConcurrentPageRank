@@ -12,7 +12,7 @@ class Sha256IdGenerator : public IdGenerator {
     virtual PageId generateId(std::string const &content) const {
       char buffer[64];
       std::string hashValue;
-      std::string aux = "echo '" + content + "' | sha256sum";
+      std::string aux = "tr -d '\n' echo '" + content + "' | sha256sum";
       FILE *pipe = popen(aux.c_str(), "r");
 
       if (pipe == nullptr) {
