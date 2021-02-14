@@ -5,6 +5,7 @@
 #include "immutable/pageId.hpp"
 #include <iostream>
 #include <fstream>
+#include <atomic>
 
 class Sha256IdGenerator : public IdGenerator {
   public:
