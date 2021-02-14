@@ -13,6 +13,7 @@ class Sha256IdGenerator : public IdGenerator {
       char buffer[64];
       std::string hashValue;
       std::string aux = "echo " + content + " | sha256sum";
+      std::cout << aux << std::endl;
       FILE *pipe = popen(aux.c_str(), "r");
 
       if (pipe == nullptr) {
