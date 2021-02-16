@@ -16,10 +16,8 @@
 
 namespace {
   void initializePagesIds(uint32_t numThreads, uint32_t myNumber, Network const &network) {
-    auto pages = network.getPages();
-
     for (uint32_t i = myNumber; i < network.getSize(); i += numThreads) {
-      pages[i].generateId(network.getGenerator());
+      network.getPages()[i].generateId(network.getGenerator());
     }
   }
 
