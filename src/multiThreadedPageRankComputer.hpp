@@ -21,8 +21,7 @@ namespace {
     }
   }
 
-  void initializeStructures(Network const &network, uint32_t numThreads, std::vector<PageId> *myPages,
-                            std::vector<PageId> *myDanglingPages,
+  void initializeStructures(Network const &network, uint32_t numThreads,
                             std::unordered_map<PageId, PageRank, PageIdHash> &pageHashMap,
                             std::unordered_map<PageId, uint32_t, PageIdHash> &numLinks,
                             std::unordered_set<PageId, PageIdHash> &danglingNodes,
@@ -52,34 +51,23 @@ namespace {
       }
     }
 
-    uint32_t counter = 0;
-    for (auto const &pageId : danglingNodes) {
-      myDanglingPages[counter % numThreads].push_back(pageId);
-      counter++;
-    }
-
     for (auto page : network.getPages()) {
       for (auto link : page.getLinks()) {
         edges[link].push_back(page.getId());
       }
     }
-
-    counter = 0;
-    for (auto const &page : network.getPages()) {
-      myPages[counter % numThreads].push_back(page.getId());
-      counter++;
-    }
   }
 
-  void pageRankIteration(Network const &network, double alpha, double dangleSum, std::vector<PageId> const &myPages,
+  void pageRankIteration(Network const &network, double alpha, double dangleSum,
+                         uint32_t threadNum, uint32_t numThreads,
                          std::unordered_map<PageId, PageRank, PageIdHash> &pageHashMap,
                          std::unordered_map<PageId, uint32_t, PageIdHash> &numLinks,
                          std::unordered_map<PageId, PageRank, PageIdHash> &previousPageHashMap,
                          std::unordered_map<PageId, std::vector<PageId>, PageIdHash> &edges,
                          std::promise<double> &differencePromise) {
     double difference = 0;
-    for (auto const &u : myPages) {
-      PageId pageId = u;
+    for (uint32_t i = threadNum; i < network.getSize(); i += numThreads) {
+      PageId pageId = network.getPages()[i].getId();
 
       double danglingWeight = 1.0 / network.getSize();
       pageHashMap[pageId] = dangleSum * danglingWeight + (1.0 - alpha) / network.getSize();
@@ -105,18 +93,19 @@ namespace {
     return difference;
   }
 
-  void singleThreadDangleSum(std::vector<PageId> &myDanglingPages, std::promise<double> &dangleSumPromise,
+  void singleThreadDangleSum(Network const &network, uint32_t threadNum, uint32_t numThreads,
+                             std::promise<double> &dangleSumPromise,
                              std::unordered_map<PageId, PageRank, PageIdHash> &previousPageHashMap) {
     double dangleSum = 0;
 
-    for (auto const &pageId : myDanglingPages) {
-      dangleSum += previousPageHashMap[pageId];
+    for (uint32_t i = threadNum; i < network.getSize(); i += numThreads) {
+      dangleSum += previousPageHashMap[network.getPages()[i].getId()];
     }
 
     dangleSumPromise.set_value(dangleSum);
   }
 
-  double countDangleSum(uint32_t numThreads, std::vector<PageId> *myDanglingPages,
+  double countDangleSum(Network const &network, uint32_t numThreads,
                         std::unordered_map<PageId, PageRank, PageIdHash> &previousPageHashMap) {
     double dangleSum = 0;
     std::promise<double> dangleSumPromises[numThreads];
@@ -125,7 +114,7 @@ namespace {
 
     for (uint32_t i = 0; i < numThreads; i++) {
       dangleSumFutures[i] = dangleSumPromises[i].get_future();
-      threadsVector.push_back(std::thread{singleThreadDangleSum, std::ref(myDanglingPages[i]),
+      threadsVector.push_back(std::thread{singleThreadDangleSum, network, i, numThreads,
                                           std::ref(dangleSumPromises[i]), std::ref(previousPageHashMap)});
     }
 
@@ -150,15 +139,13 @@ class MultiThreadedPageRankComputer : public PageRankComputer {
     computeForNetwork(Network const &network, double alpha, uint32_t iterations,
                       double tolerance) const {
       std::vector<PageIdAndRank> result;
-      std::vector<PageId> myPages[numThreads];
-      std::vector<PageId> myDanglingPages[numThreads];
       std::vector<std::thread> threadsVector;
       std::unordered_map<PageId, PageRank, PageIdHash> pageHashMap;
       std::unordered_map<PageId, uint32_t, PageIdHash> numLinks;
       std::unordered_set<PageId, PageIdHash> danglingNodes;
       std::unordered_map<PageId, std::vector<PageId>, PageIdHash> edges;
 
-      initializeStructures(network, numThreads, myPages, myDanglingPages, pageHashMap, numLinks, danglingNodes, edges);
+      initializeStructures(network, numThreads, pageHashMap, numLinks, danglingNodes, edges);
 
       for (uint32_t i = 0; i < iterations; i++) {
         std::unordered_map<PageId, PageRank, PageIdHash> previousPageHashMap = pageHashMap;
@@ -166,12 +153,12 @@ class MultiThreadedPageRankComputer : public PageRankComputer {
         std::promise<double> differencePromises[numThreads];
         std::future<double> differenceFutures[numThreads];
 
-        double dangleSum = countDangleSum(numThreads, myDanglingPages, previousPageHashMap) * alpha;
+        double dangleSum = countDangleSum(network, numThreads, previousPageHashMap) * alpha;
 
         for (uint32_t j = 0; j < numThreads; j++) {
           differenceFutures[j] = differencePromises[j].get_future();
-          threadsVector.push_back(std::thread{pageRankIteration, std::ref(network), alpha, dangleSum,
-                                              std::ref(myPages[j]), std::ref(pageHashMap), std::ref(numLinks),
+          threadsVector.push_back(std::thread{pageRankIteration, std::ref(network), alpha, dangleSum, j, numThreads,
+                                              std::ref(pageHashMap), std::ref(numLinks),
                                               std::ref(previousPageHashMap), std::ref(edges),
                                               std::ref(differencePromises[j])});
         }
