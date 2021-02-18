@@ -13,7 +13,7 @@
 #include "immutable/pageRankComputer.hpp"
 
 namespace {
-  void initializePagesIds(Network const &network, std::vector<Page> &pages, std::mutex &mut) {
+  void initializePagesIds(Network const &network, std::vector<const Page *> &pages, std::mutex &mut) {
     /* Generating names, the work is distributed between threads.
      * The distribution might not be very even. Assuming that network`s
      * pages have similar size of content such a solution (timewise) should work very well.
@@ -27,7 +27,7 @@ namespace {
         return;
       }
 
-      pages.back().generateId(generator);
+      (*pages.back()).generateId(generator);
       pages.pop_back();
     }
   }
@@ -38,11 +38,11 @@ namespace {
                             std::vector<PageId> &danglingNodes,
                             std::unordered_map<PageId, std::vector<PageId>, PageIdHash> &edges) {
     std::vector<std::thread> threadsVector;
-    std::vector<Page> pages;
+    std::vector<const Page *> pages;
     std::mutex mut;
 
-    for (auto const &page : network.getPages()) {
-      pages.push_back(page);
+    for (auto &page : network.getPages()) {
+      pages.push_back(&page);
     }
 
     for (uint32_t i = 0; i < numThreads; i++) {
