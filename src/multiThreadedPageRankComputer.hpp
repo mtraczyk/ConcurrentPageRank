@@ -75,8 +75,9 @@ namespace {
       pageHashMap[pageId] = dangleSum * danglingWeight + (1.0 - alpha) / network.getSize();
 
       if (edges.count(pageId) > 0) {
-        for (auto link : edges[pageId]) {
-          pageHashMap[pageId] += alpha * previousPageHashMap[link] / numLinks[link];
+        for (uint32_t j = 0; j < network.getPages()[i].getLinks().size(); j++) {
+          pageHashMap[pageId] += alpha * previousPageHashMap[network.getPages()[i].getLinks()[j]] /
+                                 numLinks[network.getPages()[i].getLinks()[j]];
         }
       }
       difference += std::abs(previousPageHashMap[pageId] - pageHashMap[pageId]);
@@ -172,7 +173,7 @@ class MultiThreadedPageRankComputer : public PageRankComputer {
         if (summaryDifference(numThreads, differenceFutures) < tolerance) {
           std::vector<PageIdAndRank> result;
 
-          for (auto iter : pageHashMap) {
+          for (auto &iter : pageHashMap) {
             result.push_back(PageIdAndRank(iter.first, iter.second));
           }
 
