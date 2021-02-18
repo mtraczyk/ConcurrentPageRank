@@ -14,21 +14,27 @@
 
 namespace {
   void initializePagesIds(Network const &network, std::vector<const Page *> &pages, std::mutex &mut) {
-    /* Generating names, the work is distributed between threads.
-     * The distribution might not be very even. Assuming that network`s
-     * pages have similar size of content such a solution (timewise) should work very well.
-     * Also if there are many pages and their content is rather small, it should work much better
-     * than distributing pages using some shared data which would require synchronization.
-    */
+    // Generating names, the work is distributed between threads.
     auto const &generator = network.getGenerator();
+
+    if (pages.size() == 0) {
+      return;
+    }
+
+    const Page *page = pages[0]; // auxiliary variable
+
     while (true) {
-      std::lock_guard<std::mutex> lock(mut);
+      mut.lock();
       if (pages.size() == 0) {
+        mut.unlock();
         return;
       }
 
-      (*pages.back()).generateId(generator);
+      page = pages.back();
       pages.pop_back();
+      mut.unlock();
+
+      page->generateId(generator);
     }
   }
 
@@ -76,9 +82,9 @@ namespace {
     }
   }
 
-  /* One iteration of an algorithm is evenly distributed between numThreads.
-   * Every thread during one iteration is gonna invoke this function.
-  */
+/* One iteration of an algorithm is evenly distributed between numThreads.
+ * Every thread during one iteration is gonna invoke this function.
+*/
   void pageRankIteration(Network const &network, double alpha, double dangleSum,
                          uint32_t threadNum, uint32_t numThreads,
                          std::unordered_map<PageId, PageRank, PageIdHash> &pageHashMap,
@@ -105,7 +111,7 @@ namespace {
     differencePromise.set_value(difference);
   }
 
-  // Auxiliary function that sums all of the differenceFutures obtained by threads.
+// Auxiliary function that sums all of the differenceFutures obtained by threads.
   double summaryDifference(uint32_t numThreads, std::future<double> *differenceFutures) {
     double difference = 0;
 
@@ -128,7 +134,7 @@ namespace {
     dangleSumPromise.set_value(dangleSum);
   }
 
-  // Function which obtains dangleSum using numThreads.
+// Function which obtains dangleSum using numThreads.
   double countDangleSum(std::vector<PageId> const &danglingNodes, uint32_t numThreads,
                         std::unordered_map<PageId, PageRank, PageIdHash> &previousPageHashMap) {
     double dangleSum = 0;
@@ -152,6 +158,7 @@ namespace {
 
     return dangleSum;
   }
+
 };
 
 class MultiThreadedPageRankComputer : public PageRankComputer {
