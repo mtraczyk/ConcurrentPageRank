@@ -41,18 +41,23 @@ namespace {
     }
 
     // Initialization of structures needed in MultiThreadedPageRankComputer::computeForNetwork.
-    for (uint32_t i = 0; i < network.getSize(); i++) {
-      pageHashMap[network.getPages()[i].getId()] = 1.0 / network.getSize();
-      numLinks[network.getPages()[i].getId()] = network.getPages()[i].getLinks().size();
+    for (auto const &page : network.getPages()) {
+      pageHashMap[page.getId()] = 1.0 / network.getSize();
+    }
 
-      if (network.getPages()[i].getLinks().size() == 0) {
-        danglingNodes.push_back(network.getPages()[i].getId());
+    for (auto const &page : network.getPages()) {
+      numLinks[page.getId()] = page.getLinks().size();
+    }
+
+    for (auto const &page : network.getPages()) {
+      if (page.getLinks().size() == 0) {
+        danglingNodes.push_back(page.getId());
       }
     }
 
-    for (uint32_t i = 0; i < network.getSize(); i++) {
-      for (uint32_t j = 0; j < network.getPages()[i].getLinks().size(); j++) {
-        edges[network.getPages()[i].getLinks()[j]].push_back(network.getPages()[i].getId());
+    for (auto const &page : network.getPages()) {
+      for (auto const &link : page.getLinks()) {
+        edges[link].push_back(page.getId());
       }
     }
   }
@@ -172,7 +177,7 @@ class MultiThreadedPageRankComputer : public PageRankComputer {
         if (summaryDifference(numThreads, differenceFutures) < tolerance) {
           std::vector<PageIdAndRank> result;
 
-          for (auto &iter : pageHashMap) {
+          for (auto const &iter : pageHashMap) {
             result.push_back(PageIdAndRank(iter.first, iter.second));
           }
 
