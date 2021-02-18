@@ -13,6 +13,9 @@ class Sha256IdGenerator : public IdGenerator {
       char buffer[64];
       std::string hashValue;
       static std::atomic<int> counter(0);
+      /* Creating a file that is gonna contain content.
+       * There can be multiple such files, one for every thread. Therefore, I used counter to name it.
+      */
       std::string fileName = "content" + std::to_string(counter.fetch_add(1)) + ".txt";
       std::fstream contentFile(fileName, std::ios::in | std::ios::out | std::ios::trunc);
 
@@ -20,10 +23,12 @@ class Sha256IdGenerator : public IdGenerator {
         throw std::runtime_error("Could not open a file.");
       }
 
+      // Saving content to the opened file.
       contentFile << content;
-      contentFile.close();
+      contentFile.close(); // Closing the file.
 
       std::string aux = "sha256sum " + fileName;
+      // Creating pipe with popen to get sha256sum of the given content.
       FILE *pipe = popen(aux.c_str(), "r");
 
       if (pipe == nullptr) {

@@ -65,15 +65,16 @@ class SingleThreadedPageRankComputer : public PageRankComputer {
           difference += std::abs(previousPageHashMap[pageId] - pageHashMap[pageId]);
         }
 
-        std::vector<PageIdAndRank> result;
-        for (auto iter : pageHashMap) {
-          result.push_back(PageIdAndRank(iter.first, iter.second));
-        }
-
-        ASSERT(result.size() == network.getSize(),
-               "Invalid result size=" << result.size() << ", for network" << network);
-
         if (difference < tolerance) {
+          std::vector<PageIdAndRank> result;
+
+          for (auto iter : pageHashMap) {
+            result.push_back(PageIdAndRank(iter.first, iter.second));
+          }
+
+          ASSERT(result.size() == network.getSize(),
+                 "Invalid result size=" << result.size() << ", for network" << network);
+
           return result;
         }
       }

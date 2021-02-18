@@ -13,6 +13,12 @@
 
 namespace {
   void initializePagesIds(uint32_t numThreads, uint32_t myNumber, Network const &network) {
+    /* Generating names, the work is distributed between threads.
+     * The distribution might not be very even. Assuming that network`s
+     * pages have similar size of content such a solution (timewise) should work very well.
+     * Also if there are many pages and their content is rather small, it should work much better
+     * than distributing pages using some shared data which would require synchronization.
+    */
     for (uint32_t i = myNumber; i < network.getSize(); i += numThreads) {
       network.getPages()[i].generateId(network.getGenerator());
     }
@@ -26,6 +32,7 @@ namespace {
     std::vector<std::thread> threadsVector;
 
     for (uint32_t i = 0; i < numThreads; i++) {
+      // Initializing pages` ids.
       threadsVector.push_back(std::thread{initializePagesIds, numThreads, i, std::ref(network)});
     }
 
@@ -55,6 +62,9 @@ namespace {
     }
   }
 
+  /* One iteration of an algorithm is evenly distributed between numThreads.
+   * Every thread during one iteration is gonna invoke this function.
+  */
   void pageRankIteration(Network const &network, double alpha, double dangleSum,
                          uint32_t threadNum, uint32_t numThreads,
                          std::unordered_map<PageId, PageRank, PageIdHash> &pageHashMap,
@@ -80,6 +90,7 @@ namespace {
     differencePromise.set_value(difference);
   }
 
+  // Auxiliary function that sums all of the differenceFutures obtained by threads.
   double summaryDifference(uint32_t numThreads, std::future<double> *differenceFutures) {
     double difference = 0;
 
@@ -102,6 +113,7 @@ namespace {
     dangleSumPromise.set_value(dangleSum);
   }
 
+  // Function which obtains dangleSum using numThreads.
   double countDangleSum(std::vector<PageId> const &danglingNodes, uint32_t numThreads,
                         std::unordered_map<PageId, PageRank, PageIdHash> &previousPageHashMap) {
     double dangleSum = 0;
@@ -135,7 +147,9 @@ class MultiThreadedPageRankComputer : public PageRankComputer {
     std::vector<PageIdAndRank>
     computeForNetwork(Network const &network, double alpha, uint32_t iterations,
                       double tolerance) const {
-      std::vector<PageIdAndRank> result;
+      /* The implementation is basically the same as singleThreadedPageRankComputer::computeForNetwork.
+       * The only difference is that the work, is distributed between threads.
+      */
       std::vector<std::thread> threadsVector;
       std::unordered_map<PageId, PageRank, PageIdHash> pageHashMap;
       std::unordered_map<PageId, uint32_t, PageIdHash> numLinks;
@@ -161,6 +175,8 @@ class MultiThreadedPageRankComputer : public PageRankComputer {
         }
 
         if (summaryDifference(numThreads, differenceFutures) < tolerance) {
+          std::vector<PageIdAndRank> result;
+
           for (auto iter : pageHashMap) {
             result.push_back(PageIdAndRank(iter.first, iter.second));
           }
