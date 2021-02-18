@@ -21,7 +21,7 @@ namespace {
       return;
     }
 
-    const Page *page = pages[0]; // auxiliary variable
+    auto page = pages[0]; // auxiliary variable
 
     while (true) {
       mut.lock();
@@ -99,7 +99,7 @@ namespace {
       return;
     }
 
-    const Page *page = pages[0]; // auxiliary variable
+    auto page = pages[0]; // auxiliary variable
 
     while (true) {
       mut.lock();
@@ -174,7 +174,6 @@ namespace {
 
     return dangleSum;
   }
-
 };
 
 class MultiThreadedPageRankComputer : public PageRankComputer {
