@@ -19,8 +19,9 @@ namespace {
      * Also if there are many pages and their content is rather small, it should work much better
      * than distributing pages using some shared data which would require synchronization.
     */
+    auto ptrToPages = &network.getPages();
     for (uint32_t i = myNumber; i < network.getSize(); i += numThreads) {
-      network.getPages()[i].generateId(network.getGenerator());
+      (*ptrToPages)[i].generateId(network.getGenerator());
     }
   }
 
@@ -73,8 +74,9 @@ namespace {
                          std::unordered_map<PageId, std::vector<PageId>, PageIdHash> &edges,
                          std::promise<double> &differencePromise) {
     double difference = 0;
+    auto ptrToPages = &network.getPages();
     for (uint32_t i = threadNum; i < network.getSize(); i += numThreads) {
-      PageId pageId = network.getPages()[i].getId();
+      PageId pageId = (*ptrToPages)[i].getId();
 
       double danglingWeight = 1.0 / network.getSize();
       pageHashMap[pageId] = dangleSum * danglingWeight + (1.0 - alpha) / network.getSize();
