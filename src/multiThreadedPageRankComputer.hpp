@@ -41,23 +41,18 @@ namespace {
     }
 
     // Initialization of structures needed in MultiThreadedPageRankComputer::computeForNetwork.
-    for (auto const &page : network.getPages()) {
-      pageHashMap[page.getId()] = 1.0 / network.getSize();
-    }
+    for (uint32_t i = 0; i < network.getSize(); i++) {
+      pageHashMap[network.getPages()[i].getId()] = 1.0 / network.getSize();
+      numLinks[network.getPages()[i].getId()] = network.getPages()[i].getLinks().size();
 
-    for (auto page : network.getPages()) {
-      numLinks[page.getId()] = page.getLinks().size();
-    }
-
-    for (auto page : network.getPages()) {
-      if (page.getLinks().size() == 0) {
-        danglingNodes.push_back(page.getId());
+      if (network.getPages()[i].getLinks().size() == 0) {
+        danglingNodes.push_back(network.getPages()[i].getId());
       }
     }
 
-    for (auto page : network.getPages()) {
-      for (auto link : page.getLinks()) {
-        edges[link].push_back(page.getId());
+    for (uint32_t i = 0; i < network.getSize(); i++) {
+      for (uint32_t j = 0; j < network.getPages()[i].getLinks().size(); j++) {
+        edges[network.getPages()[i].getLinks()[j]].push_back(network.getPages()[i].getId());
       }
     }
   }
