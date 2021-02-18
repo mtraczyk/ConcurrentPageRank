@@ -75,9 +75,9 @@ namespace {
                          std::unordered_map<PageId, std::vector<PageId>, PageIdHash> &edges,
                          std::promise<double> &differencePromise) {
     double difference = 0;
-    auto ptrToPages = &network.getPages();
+    auto const &pages = network.getPages();
     for (uint32_t i = threadNum; i < network.getSize(); i += numThreads) {
-      PageId pageId = (*ptrToPages)[i].getId();
+      PageId pageId = pages[i].getId();
 
       double danglingWeight = 1.0 / network.getSize();
       pageHashMap[pageId] = dangleSum * danglingWeight + (1.0 - alpha) / network.getSize();
