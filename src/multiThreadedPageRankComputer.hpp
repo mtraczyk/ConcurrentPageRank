@@ -6,23 +6,29 @@
 #include <unordered_set>
 #include <vector>
 #include <future>
+#include <mutex>
 
 #include "immutable/network.hpp"
 #include "immutable/pageIdAndRank.hpp"
 #include "immutable/pageRankComputer.hpp"
 
 namespace {
-  void initializePagesIds(uint32_t numThreads, uint32_t myNumber, Network const &network) {
+  void initializePagesIds(Network const &network, std::vector<Page> &pages, std::mutex &mut) {
     /* Generating names, the work is distributed between threads.
      * The distribution might not be very even. Assuming that network`s
      * pages have similar size of content such a solution (timewise) should work very well.
      * Also if there are many pages and their content is rather small, it should work much better
      * than distributing pages using some shared data which would require synchronization.
     */
-    auto const &pages = network.getPages();
     auto const &generator = network.getGenerator();
-    for (uint32_t i = myNumber; i < network.getSize(); i += numThreads) {
-      pages[i].generateId(generator);
+    while (true) {
+      std::lock_guard<std::mutex> lock(mut);
+      if (pages.size() == 0) {
+        return;
+      }
+
+      pages.back().generateId(generator);
+      pages.pop_back();
     }
   }
 
@@ -32,10 +38,16 @@ namespace {
                             std::vector<PageId> &danglingNodes,
                             std::unordered_map<PageId, std::vector<PageId>, PageIdHash> &edges) {
     std::vector<std::thread> threadsVector;
+    std::vector<Page> pages;
+    std::mutex mut;
+
+    for (auto const &page : network.getPages()) {
+      pages.push_back(page);
+    }
 
     for (uint32_t i = 0; i < numThreads; i++) {
       // Initializing pages` ids.
-      threadsVector.push_back(std::thread{initializePagesIds, numThreads, i, std::ref(network)});
+      threadsVector.push_back(std::thread{initializePagesIds, std::ref(network), std::ref(pages), std::ref(mut)});
     }
 
     for (uint32_t i = 0; i < numThreads; i++) {
