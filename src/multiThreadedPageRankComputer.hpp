@@ -75,9 +75,8 @@ namespace {
       pageHashMap[pageId] = dangleSum * danglingWeight + (1.0 - alpha) / network.getSize();
 
       if (edges.count(pageId) > 0) {
-        for (uint32_t j = 0; j < network.getPages()[i].getLinks().size(); j++) {
-          pageHashMap[pageId] += alpha * previousPageHashMap[network.getPages()[i].getLinks()[j]] /
-                                 numLinks[network.getPages()[i].getLinks()[j]];
+        for (auto const &link : edges[pageId]) {
+          pageHashMap[pageId] += alpha * previousPageHashMap[link] / numLinks[link];
         }
       }
       difference += std::abs(previousPageHashMap[pageId] - pageHashMap[pageId]);
