@@ -22,7 +22,7 @@ namespace {
     auto const &pages = network.getPages();
     auto const &generator = network.getGenerator();
     for (uint32_t i = myNumber; i < network.getSize(); i += numThreads) {
-      pages[i].generateId(generator);git
+      pages[i].generateId(generator);
     }
   }
 
