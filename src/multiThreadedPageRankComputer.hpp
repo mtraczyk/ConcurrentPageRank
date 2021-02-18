@@ -19,9 +19,10 @@ namespace {
      * Also if there are many pages and their content is rather small, it should work much better
      * than distributing pages using some shared data which would require synchronization.
     */
-    auto ptrToPages = &network.getPages();
+    auto const &pages = network.getPages();
+    auto const &generator = network.getGenerator();
     for (uint32_t i = myNumber; i < network.getSize(); i += numThreads) {
-      (*ptrToPages)[i].generateId(network.getGenerator());
+      pages[i].generateId(generator);git
     }
   }
 
