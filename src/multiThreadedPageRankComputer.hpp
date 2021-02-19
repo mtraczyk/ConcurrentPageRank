@@ -94,7 +94,7 @@ namespace {
     double difference = 0;
     auto const networkSize = pages.size();
 
-    if (pages.size() == 0) {
+    if (networkSize == 0) {
       differencePromise.set_value(difference);
       return;
     }
@@ -214,6 +214,8 @@ class MultiThreadedPageRankComputer : public PageRankComputer {
                                               std::ref(differencePromises[j])});
         }
 
+        auto aux = summaryDifference(numThreads, differenceFutures);
+        std::cout << aux << std::endl;
         if (summaryDifference(numThreads, differenceFutures) < tolerance) {
           std::vector<PageIdAndRank> result;
 
