@@ -57,10 +57,9 @@ namespace {
     }
 
     auto page = pages[0]; // auxiliary variable
+    barrier.reach();
 
     while (true) {
-      barrier.reach();
-
       mut.lock();
       if (pages.size() == 0) {
         mut.unlock();
@@ -141,9 +140,9 @@ namespace {
 
     auto page = pages[0]; // auxiliary variable
 
-    while (true) {
-      barrier.reach();
+    barrier.reach();
 
+    while (true) {
       mut.lock();
       if (pages.size() == 0) {
         mut.unlock();
