@@ -36,6 +36,8 @@ namespace {
       void waits() {
         std::unique_lock<std::mutex> lk(cv_m);
         cv.wait(lk, [this] { return m_resistance == 0; });
+        static std::atomic<int> a;
+        std::cout << a.fetch_add(1) << std::endl;
       }
 
       void signals() {
@@ -51,13 +53,13 @@ namespace {
   void initializePagesIds(Barrier &barrier, Network const &network, std::vector<const Page *> &pages, std::mutex &mut) {
     // Generating names, the work is distributed between threads.
     auto const &generator = network.getGenerator();
+    barrier.reach();
 
     if (pages.size() == 0) {
       return;
     }
 
     auto page = pages[0]; // auxiliary variable
-    barrier.reach();
 
     while (true) {
       mut.lock();
@@ -132,6 +134,7 @@ namespace {
                          std::promise<double> &differencePromise) {
     double difference = 0;
     auto const networkSize = pages.size();
+    barrier.reach();
 
     if (pages.size() == 0) {
       differencePromise.set_value(difference);
@@ -139,8 +142,6 @@ namespace {
     }
 
     auto page = pages[0]; // auxiliary variable
-
-    barrier.reach();
 
     while (true) {
       mut.lock();
