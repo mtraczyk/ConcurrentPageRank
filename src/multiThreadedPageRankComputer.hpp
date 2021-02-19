@@ -37,7 +37,6 @@ namespace {
         std::unique_lock<std::mutex> lk(cv_m);
         cv.wait(lk, [this] { return m_resistance == 0; });
         static std::atomic<int> a;
-        std::cout << a.fetch_add(1) << std::endl;
       }
 
       void signals() {
