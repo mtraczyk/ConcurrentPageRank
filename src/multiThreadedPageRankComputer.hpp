@@ -7,31 +7,68 @@
 #include <vector>
 #include <future>
 #include <mutex>
+#include <condition_variable>
 
 #include "immutable/network.hpp"
 #include "immutable/pageIdAndRank.hpp"
 #include "immutable/pageRankComputer.hpp"
 
 namespace {
-  void initializePagesIds(Network const &network, std::vector<const Page *> *pages, std::mutex &mut) {
+  class Barrier {
+    public:
+      Barrier(uint32_t resistance) : m_resistance(resistance) {}
+
+      void reach() {
+        std::unique_lock<std::mutex> lk(mutex);
+
+        if (m_resistance > 1) {
+          m_resistance--;
+          lk.unlock();
+          waits();
+        } else if (m_resistance == 1) {
+          m_resistance--;
+          lk.unlock();
+          signals();
+        }
+      }
+
+    private:
+      void waits() {
+        std::unique_lock<std::mutex> lk(cv_m);
+        cv.wait(lk, [this] { return m_resistance == 0; });
+      }
+
+      void signals() {
+        cv.notify_all();
+      }
+
+      volatile uint32_t m_resistance;
+      std::condition_variable cv;
+      std::mutex cv_m;
+      std::mutex mutex;
+  };
+
+  void initializePagesIds(Barrier &barrier, Network const &network, std::vector<const Page *> &pages, std::mutex &mut) {
     // Generating names, the work is distributed between threads.
     auto const &generator = network.getGenerator();
 
-    if ((*pages).size() == 0) {
+    if (pages.size() == 0) {
       return;
     }
 
-    auto page = (*pages)[0]; // auxiliary variable
+    auto page = pages[0]; // auxiliary variable
 
     while (true) {
+      barrier.reach();
+
       mut.lock();
-      if ((*pages).size() == 0) {
+      if (pages.size() == 0) {
         mut.unlock();
         return;
       }
 
-      page = (*pages).back();
-      (*pages).pop_back();
+      page = pages.back();
+      pages.pop_back();
       mut.unlock();
 
       page->generateId(generator);
@@ -51,9 +88,11 @@ namespace {
     }
 
     auto pagesCopy = pages;
+    Barrier barrier(numThreads);
     for (uint32_t i = 0; i < numThreads; i++) {
       // Initializing pages` ids.
-      threadsVector.push_back(std::thread{initializePagesIds, std::ref(network), &pagesCopy, std::ref(mut)});
+      threadsVector.push_back(std::thread{initializePagesIds, std::ref(barrier), std::ref(network),
+                                          std::ref(pagesCopy), std::ref(mut)});
     }
 
     for (uint32_t i = 0; i < numThreads; i++) {
@@ -85,32 +124,35 @@ namespace {
 /* One iteration of an algorithm is evenly distributed between numThreads.
  * Every thread during one iteration is gonna invoke this function.
 */
-  void pageRankIteration(std::vector<const Page *> *pages, std::mutex &mut, double alpha, double dangleSum,
+  void pageRankIteration(Barrier &barrier, std::vector<const Page *> &pages, std::mutex &mut,
+                         double alpha, double dangleSum,
                          std::unordered_map<PageId, PageRank, PageIdHash> &pageHashMap,
                          std::unordered_map<PageId, uint32_t, PageIdHash> &numLinks,
                          std::unordered_map<PageId, PageRank, PageIdHash> &previousPageHashMap,
                          std::unordered_map<PageId, std::vector<PageId>, PageIdHash> &edges,
                          std::promise<double> &differencePromise) {
     double difference = 0;
-    auto const networkSize = (*pages).size();
+    auto const networkSize = pages.size();
 
-    if ((*pages).size() == 0) {
+    if (pages.size() == 0) {
       differencePromise.set_value(difference);
       return;
     }
 
-    auto page = (*pages)[0]; // auxiliary variable
+    auto page = pages[0]; // auxiliary variable
 
     while (true) {
+      barrier.reach();
+
       mut.lock();
-      if ((*pages).size() == 0) {
+      if (pages.size() == 0) {
         mut.unlock();
         differencePromise.set_value(difference);
         return;
       }
 
-      page = (*pages).back();
-      (*pages).pop_back();
+      page = pages.back();
+      pages.pop_back();
       mut.unlock();
 
       PageId pageId = (*page).getId();
@@ -199,17 +241,19 @@ class MultiThreadedPageRankComputer : public PageRankComputer {
 
       for (uint32_t i = 0; i < iterations; i++) {
         std::unordered_map<PageId, PageRank, PageIdHash> previousPageHashMap = pageHashMap;
+        auto pagesCopy = pages;
+        Barrier barrier(numThreads);
         threadsVector.clear();
         std::promise<double> differencePromises[numThreads];
         std::future<double> differenceFutures[numThreads];
 
         double dangleSum = countDangleSum(danglingNodes, numThreads, previousPageHashMap) * alpha;
 
-        auto pagesCopy = pages;
         for (uint32_t j = 0; j < numThreads; j++) {
           differenceFutures[j] = differencePromises[j].get_future();
-          threadsVector.push_back(std::thread{pageRankIteration, &pagesCopy, std::ref(mut), alpha,
-                                              dangleSum, std::ref(pageHashMap), std::ref(numLinks),
+          threadsVector.push_back(std::thread{pageRankIteration, std::ref(barrier), std::ref(pagesCopy),
+                                              std::ref(mut), alpha, dangleSum,
+                                              std::ref(pageHashMap), std::ref(numLinks),
                                               std::ref(previousPageHashMap), std::ref(edges),
                                               std::ref(differencePromises[j])});
         }
