@@ -180,7 +180,10 @@ class MultiThreadedPageRankComputer : public PageRankComputer {
       std::vector<const Page *> pages;
 
       initializeStructures(network, numThreads, pages, pageHashMap, numLinks, danglingNodes, edges);
-      std::cout << pages.size() << std::endl;
+      if (pages.size() != network.getSize()) {
+        std::cout << "!!!!" << std::endl;
+
+      }
 
       for (uint32_t i = 0; i < iterations; i++) {
         std::unordered_map<PageId, PageRank, PageIdHash> previousPageHashMap = pageHashMap;
