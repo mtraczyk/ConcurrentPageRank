@@ -38,13 +38,12 @@ namespace {
     }
   }
 
-  void initializeStructures(Network const &network, uint32_t numThreads,
+  void initializeStructures(Network const &network, uint32_t numThreads, std::vector<const Page *> &pages,
                             std::unordered_map<PageId, PageRank, PageIdHash> &pageHashMap,
                             std::unordered_map<PageId, uint32_t, PageIdHash> &numLinks,
                             std::vector<PageId> &danglingNodes,
                             std::unordered_map<PageId, std::vector<PageId>, PageIdHash> &edges) {
     std::vector<std::thread> threadsVector;
-    std::vector<const Page *> pages;
     std::mutex mut;
 
     for (auto &page : network.getPages()) {
@@ -178,8 +177,10 @@ class MultiThreadedPageRankComputer : public PageRankComputer {
       std::unordered_map<PageId, uint32_t, PageIdHash> numLinks;
       std::vector<PageId> danglingNodes;
       std::unordered_map<PageId, std::vector<PageId>, PageIdHash> edges;
+      std::vector<const Page *> pages;
 
-      initializeStructures(network, numThreads, pageHashMap, numLinks, danglingNodes, edges);
+      initializeStructures(network, numThreads, pages, pageHashMap, numLinks, danglingNodes, edges);
+      std::cout << pages.size() << std::endl;
 
       for (uint32_t i = 0; i < iterations; i++) {
         std::unordered_map<PageId, PageRank, PageIdHash> previousPageHashMap = pageHashMap;
