@@ -51,9 +51,10 @@ namespace {
       pages.push_back(&page);
     }
 
+    auto pagesCopy = pages;
     for (uint32_t i = 0; i < numThreads; i++) {
       // Initializing pages` ids.
-      threadsVector.push_back(std::thread{initializePagesIds, std::ref(network), std::ref(pages), std::ref(mut)});
+      threadsVector.push_back(std::thread{initializePagesIds, std::ref(network), std::ref(pagesCopy), std::ref(mut)});
     }
 
     for (uint32_t i = 0; i < numThreads; i++) {
