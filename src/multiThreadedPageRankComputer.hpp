@@ -215,7 +215,7 @@ class MultiThreadedPageRankComputer : public PageRankComputer {
         }
 
         auto aux = summaryDifference(numThreads, differenceFutures);
-        std::cout << aux << std::endl;
+        std::cout << tolerance - aux << std::endl;
         if (aux < tolerance) {
           std::vector<PageIdAndRank> result;
 
