@@ -21,7 +21,7 @@ namespace {
       return;
     }
 
-    const Page *page = pages[0]; // auxiliary variable
+    auto page = pages[0]; // auxiliary variable
 
     while (true) {
       mut.lock();
@@ -85,20 +85,38 @@ namespace {
 /* One iteration of an algorithm is evenly distributed between numThreads.
  * Every thread during one iteration is gonna invoke this function.
 */
-  void pageRankIteration(Network const &network, double alpha, double dangleSum,
-                         uint32_t threadNum, uint32_t numThreads,
+  void pageRankIteration(std::vector<const Page *> &pages, std::mutex &mut, double alpha, double dangleSum,
                          std::unordered_map<PageId, PageRank, PageIdHash> &pageHashMap,
                          std::unordered_map<PageId, uint32_t, PageIdHash> &numLinks,
                          std::unordered_map<PageId, PageRank, PageIdHash> &previousPageHashMap,
                          std::unordered_map<PageId, std::vector<PageId>, PageIdHash> &edges,
                          std::promise<double> &differencePromise) {
     double difference = 0;
-    auto const &pages = network.getPages();
-    for (uint32_t i = threadNum; i < network.getSize(); i += numThreads) {
-      PageId pageId = pages[i].getId();
+    auto const networkSize = pages.size();
 
-      double danglingWeight = 1.0 / network.getSize();
-      pageHashMap[pageId] = dangleSum * danglingWeight + (1.0 - alpha) / network.getSize();
+    if (pages.size() == 0) {
+      differencePromise.set_value(difference);
+      return;
+    }
+
+    auto page = pages[0]; // auxiliary variable
+
+    while (true) {
+      mut.lock();
+      if (pages.size() == 0) {
+        mut.unlock();
+        differencePromise.set_value(difference);
+        return;
+      }
+
+      page = pages.back();
+      pages.pop_back();
+      mut.unlock();
+
+      PageId pageId = (*page).getId();
+
+      double danglingWeight = 1.0 / networkSize;
+      pageHashMap[pageId] = dangleSum * danglingWeight + (1.0 - alpha) / networkSize;
 
       if (edges.count(pageId) > 0) {
         for (auto const &link : edges[pageId]) {
@@ -107,8 +125,6 @@ namespace {
       }
       difference += std::abs(previousPageHashMap[pageId] - pageHashMap[pageId]);
     }
-
-    differencePromise.set_value(difference);
   }
 
 // Auxiliary function that sums all of the differenceFutures obtained by threads.
@@ -158,7 +174,6 @@ namespace {
 
     return dangleSum;
   }
-
 };
 
 class MultiThreadedPageRankComputer : public PageRankComputer {
@@ -178,12 +193,9 @@ class MultiThreadedPageRankComputer : public PageRankComputer {
       std::vector<PageId> danglingNodes;
       std::unordered_map<PageId, std::vector<PageId>, PageIdHash> edges;
       std::vector<const Page *> pages;
+      std::mutex mut;
 
       initializeStructures(network, numThreads, pages, pageHashMap, numLinks, danglingNodes, edges);
-      if (pages.size() != network.getSize()) {
-        std::cout << "!!!!" << std::endl;
-
-      }
 
       for (uint32_t i = 0; i < iterations; i++) {
         std::unordered_map<PageId, PageRank, PageIdHash> previousPageHashMap = pageHashMap;
@@ -194,9 +206,10 @@ class MultiThreadedPageRankComputer : public PageRankComputer {
         double dangleSum = countDangleSum(danglingNodes, numThreads, previousPageHashMap) * alpha;
 
         for (uint32_t j = 0; j < numThreads; j++) {
+          auto pagesCopy = pages;
           differenceFutures[j] = differencePromises[j].get_future();
-          threadsVector.push_back(std::thread{pageRankIteration, std::ref(network), alpha, dangleSum, j, numThreads,
-                                              std::ref(pageHashMap), std::ref(numLinks),
+          threadsVector.push_back(std::thread{pageRankIteration, std::ref(pagesCopy), std::ref(mut), alpha,
+                                              dangleSum, std::ref(pageHashMap), std::ref(numLinks),
                                               std::ref(previousPageHashMap), std::ref(edges),
                                               std::ref(differencePromises[j])});
         }
