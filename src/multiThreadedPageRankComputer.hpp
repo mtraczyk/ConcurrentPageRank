@@ -205,13 +205,15 @@ class MultiThreadedPageRankComputer : public PageRankComputer {
 
         double dangleSum = countDangleSum(danglingNodes, numThreads, previousPageHashMap) * alpha;
 
+        auto pagesCopy = pages;
         for (uint32_t j = 0; j < numThreads; j++) {
-          auto pagesCopy = pages;
           differenceFutures[j] = differencePromises[j].get_future();
+          mut.lock();
           threadsVector.push_back(std::thread{pageRankIteration, std::ref(pagesCopy), std::ref(mut), alpha,
                                               dangleSum, std::ref(pageHashMap), std::ref(numLinks),
                                               std::ref(previousPageHashMap), std::ref(edges),
                                               std::ref(differencePromises[j])});
+          mut.unlock();
         }
 
         if (summaryDifference(numThreads, differenceFutures) < tolerance) {
