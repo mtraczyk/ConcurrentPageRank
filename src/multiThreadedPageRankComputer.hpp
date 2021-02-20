@@ -128,7 +128,7 @@ namespace {
                          double alpha, double dangleSum,
                          std::unordered_map<PageId, PageRank, PageIdHash> &pageHashMap,
                          std::unordered_map<PageId, uint32_t, PageIdHash> &numLinks,
-                         std::unordered_map<PageId, PageRank, PageIdHash> &previousPageHashMap,
+                         std::unordered_map<PageId, PageRank, PageIdHash> const &previousPageHashMap,
                          std::unordered_map<PageId, std::vector<PageId>, PageIdHash> &edges,
                          std::promise<double> &differencePromise) {
     double difference = 0;
@@ -161,10 +161,10 @@ namespace {
 
       if (edges.count(pageId) > 0) {
         for (auto const &link : edges[pageId]) {
-          pageHashMap[pageId] += alpha * previousPageHashMap[link] / numLinks[link];
+          pageHashMap[pageId] += alpha * previousPageHashMap.find(link)->second / numLinks[link];
         }
       }
-      difference += std::abs(previousPageHashMap[pageId] - pageHashMap[pageId]);
+      difference += std::abs(previousPageHashMap.find(pageId)->second - pageHashMap[pageId]);
     }
   }
 
@@ -181,11 +181,11 @@ namespace {
 
   void singleThreadDangleSum(std::vector<PageId> const &danglingNodes, uint32_t threadNum, uint32_t numThreads,
                              std::promise<double> &dangleSumPromise,
-                             std::unordered_map<PageId, PageRank, PageIdHash> &previousPageHashMap) {
+                             std::unordered_map<PageId, PageRank, PageIdHash> const &previousPageHashMap) {
     double dangleSum = 0;
 
     for (uint32_t i = threadNum; i < danglingNodes.size(); i += numThreads) {
-      dangleSum += previousPageHashMap[danglingNodes[i]];
+      dangleSum += previousPageHashMap.find(danglingNodes[i])->second;
     }
 
     dangleSumPromise.set_value(dangleSum);
@@ -193,7 +193,7 @@ namespace {
 
 // Function which obtains dangleSum using numThreads.
   double countDangleSum(std::vector<PageId> const &danglingNodes, uint32_t numThreads,
-                        std::unordered_map<PageId, PageRank, PageIdHash> &previousPageHashMap) {
+                        std::unordered_map<PageId, PageRank, PageIdHash> const &previousPageHashMap) {
     double dangleSum = 0;
     std::promise<double> dangleSumPromises[numThreads];
     std::future<double> dangleSumFutures[numThreads];
