@@ -36,7 +36,6 @@ namespace {
       void waits() {
         std::unique_lock<std::mutex> lk(cv_m);
         cv.wait(lk, [this] { return m_resistance == 0; });
-        static std::atomic<int> a;
       }
 
       void signals() {
@@ -83,7 +82,7 @@ namespace {
     std::vector<std::thread> threadsVector;
     std::mutex mut;
 
-    for (auto &page : network.getPages()) {
+    for (auto const &page : network.getPages()) {
       pages.push_back(&page);
     }
 
@@ -106,11 +105,14 @@ namespace {
 
     for (auto const &page : network.getPages()) {
       numLinks[page.getId()] = page.getLinks().size();
-    }
-
-    for (auto const &page : network.getPages()) {
       if (page.getLinks().size() == 0) {
         danglingNodes.push_back(page.getId());
+      }
+    }
+
+    for (auto const &u : numLinks) {
+      if (u.second == 0) {
+        danglingNodes.push_back(u.first);
       }
     }
 
