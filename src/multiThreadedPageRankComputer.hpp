@@ -105,9 +105,6 @@ namespace {
 
     for (auto const &page : network.getPages()) {
       numLinks[page.getId()] = page.getLinks().size();
-      if (page.getLinks().size() == 0) {
-        danglingNodes.push_back(page.getId());
-      }
     }
 
     for (auto const &u : numLinks) {
